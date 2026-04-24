@@ -6,6 +6,7 @@ import '../bloc/wallet_bloc.dart';
 import '../bloc/wallet_event.dart';
 import '../bloc/wallet_state.dart';
 import '../widgets/balance_card.dart';
+import '../widgets/filter_chips.dart';
 import '../widgets/transaction_item.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -16,10 +17,32 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  final _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     context.read<WalletBloc>().add(const LoadWallet());
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      context.read<WalletBloc>().add(const LoadMoreTransactions());
+    }
+  }
+
+  Future<void> _refresh() async {
+    context.read<WalletBloc>().add(const RefreshWallet());
   }
 
   @override
@@ -42,14 +65,21 @@ class _WalletScreenState extends State<WalletScreen> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: BlocBuilder<WalletBloc, WalletState>(
             builder: (context, state) {
-              if (state is WalletLoading || state is WalletInitial) {
+              if (state is WalletInitial || state is WalletLoading) {
                 return const _LoadingSkeleton();
               }
               if (state is WalletError) {
                 return _ErrorView(message: state.message);
               }
               if (state is WalletLoaded) {
-                return _LoadedView(state: state);
+                return RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: _refresh,
+                  child: _LoadedView(
+                    state: state,
+                    scrollController: _scrollController,
+                  ),
+                );
               }
               return const SizedBox.shrink();
             },
@@ -62,42 +92,102 @@ class _WalletScreenState extends State<WalletScreen> {
 
 class _LoadedView extends StatelessWidget {
   final WalletLoaded state;
-  const _LoadedView({required this.state});
+  final ScrollController scrollController;
+
+  const _LoadedView({required this.state, required this.scrollController});
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    final count = state.filteredTransactions.length;
+    final extraCount = (state.isLoadingMore || state.hasMore) ? 1 : 0;
+    final totalItemCount = 3 + (count == 0 ? 1 : count) + extraCount;
+
+    return ListView.builder(
+      controller: scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      children: [
-        BalanceCard(balance: state.balance),
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'Transactions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+      itemCount: totalItemCount,
+      itemBuilder: (context, index) {
+        if (index == 0) return BalanceCard(balance: state.balance);
+        if (index == 1) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 24, left: 4, bottom: 8),
+            child: Text(
+              'Transactions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          );
+        }
+        if (index == 2) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: FilterChips(activeFilter: state.selectedFilter),
+          );
+        }
+        if (count == 0 && index == 3) return const _EmptyState();
+
+        final txIndex = index - 3;
+        if (txIndex < count) {
+          final tx = state.filteredTransactions[txIndex];
+          return _TransactionContainer(
+            first: txIndex == 0,
+            last: txIndex == count - 1 && !state.hasMore && !state.isLoadingMore,
+            child: TransactionItem(transaction: tx),
+          );
+        }
+
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.primary,
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class _TransactionContainer extends StatelessWidget {
+  final Widget child;
+  final bool first;
+  final bool last;
+  const _TransactionContainer({
+    required this.child,
+    required this.first,
+    required this.last,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(
+          top: first ? const Radius.circular(16) : Radius.zero,
+          bottom: last ? const Radius.circular(16) : Radius.zero,
         ),
-        if (state.filteredTransactions.isEmpty)
-          const _EmptyState()
-        else
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Column(
-              children: state.filteredTransactions
-                  .map((t) => TransactionItem(transaction: t))
-                  .toList(),
-            ),
-          ),
-      ],
+        border: Border(
+          left: const BorderSide(color: AppColors.divider),
+          right: const BorderSide(color: AppColors.divider),
+          top: first
+              ? const BorderSide(color: AppColors.divider)
+              : BorderSide.none,
+          bottom: last
+              ? const BorderSide(color: AppColors.divider)
+              : BorderSide.none,
+        ),
+      ),
+      child: child,
     );
   }
 }
@@ -166,7 +256,8 @@ class _ErrorView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -192,7 +283,7 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.inbox_outlined, size: 48, color: AppColors.textSecondary),
           SizedBox(height: 12),
           Text(
-            'No transactions yet',
+            'No transactions match this filter',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ],
