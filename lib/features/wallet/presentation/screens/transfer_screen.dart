@@ -75,14 +75,156 @@ class _TransferScreenState extends State<TransferScreen> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_isFormValid) return;
     final request = TransferRequest(
       recipient: _recipientController.text,
       points: int.parse(_pointsController.text),
       note: _noteController.text.isEmpty ? null : _noteController.text,
     );
-    context.read<WalletBloc>().add(TransferPoints(request));
+    final confirmed = await _showConfirmationSheet(request);
+    if (confirmed == true && mounted) {
+      context.read<WalletBloc>().add(TransferPoints(request));
+    }
+  }
+
+  Future<bool?> _showConfirmationSheet(TransferRequest request) {
+    final fmt = NumberFormat('#,###');
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Confirm Transfer',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Please review the details before proceeding.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            _ConfirmRow(label: 'Recipient', value: request.recipient),
+            const SizedBox(height: 12),
+            _ConfirmRow(
+              label: 'Amount',
+              value: '${fmt.format(request.points)} pts',
+              highlight: true,
+            ),
+            if (request.note != null) ...[
+              const SizedBox(height: 12),
+              _ConfirmRow(label: 'Note', value: request.note!),
+            ],
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.divider),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    child: const Text('Confirm'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSuccessDialog(String transactionId, int newBalance) async {
+    final fmt = NumberFormat('#,###');
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.check_circle, color: AppColors.success, size: 28),
+            SizedBox(width: 10),
+            Text('Transfer Successful'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            _ConfirmRow(label: 'Transaction ID', value: transactionId),
+            const SizedBox(height: 10),
+            _ConfirmRow(
+              label: 'New Balance',
+              value: '${fmt.format(newBalance)} pts',
+              highlight: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -129,13 +271,12 @@ class _TransferScreenState extends State<TransferScreen> {
             }
           }
           if (state is TransferSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Transfer completed successfully'),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            context.go('/wallet');
+            _showSuccessDialog(
+              state.result.transactionId,
+              state.result.newBalance,
+            ).then((_) {
+              if (mounted) context.go('/wallet');
+            });
           }
         },
         child: Center(
@@ -155,6 +296,9 @@ class _TransferScreenState extends State<TransferScreen> {
                     TextFormField(
                       controller: _recipientController,
                       keyboardType: TextInputType.emailAddress,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      autofillHints: null,
                       decoration: _decoration(
                         hint: '+20XXXXXXXXXX or email@example.com',
                         error: _recipientError,
@@ -288,6 +432,48 @@ class _FieldLabel extends StatelessWidget {
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
+    );
+  }
+}
+
+class _ConfirmRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool highlight;
+
+  const _ConfirmRow({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: highlight ? 16 : 14,
+              fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
+              color: highlight ? AppColors.primary : AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
