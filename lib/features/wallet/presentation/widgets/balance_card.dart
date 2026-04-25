@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n.dart';
 import '../../data/models/points_balance.dart';

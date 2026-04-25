@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n.dart';
 import '../../data/models/transaction.dart';
@@ -68,7 +68,7 @@ class TransactionItem extends StatelessWidget {
     final sign = _isPositive ? '+' : '-';
     final fmt = NumberFormat('#,###', locale.toString());
     final dateFmt = DateFormat('MMM dd, yyyy', locale.toString());
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final isRtl = Directionality.of(context) == TextDirection.  rtl;
 
     final descriptionText = transaction.description.isEmpty
         ? _typeLabel(l10n)
