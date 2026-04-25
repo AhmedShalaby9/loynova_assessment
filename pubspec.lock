@@ -613,6 +613,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  shopplus_api_client:
+    dependency: "direct main"
+    description:
+      path: "packages/shopplus_api_client"
+      relative: true
+    source: path
+    version: "1.0.0"
   sky_engine:
     dependency: transitive
     description: flutter
