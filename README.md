@@ -1,17 +1,23 @@
-# loynova_assessment
+# shopplus_wallet
 
-A new Flutter project.
+A Flutter wallet app supporting iOS, Android, and Web.
 
-## Getting Started
+## Packages
 
-This project is a starting point for a Flutter application.
+This repo contains a local Dart package under `packages/`:
 
-A few resources to get you started if this is your first Flutter project:
+- `packages/shopplus_api_client` — reusable HTTP client with interceptors, retry, and typed errors. Wired into the app via `lib/core/network/api_client_provider.dart`.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Running the package tests separately
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```
+cd packages/shopplus_api_client && dart test
+```
+
+## App development
+
+```
+flutter pub get
+flutter run
+flutter test
+```

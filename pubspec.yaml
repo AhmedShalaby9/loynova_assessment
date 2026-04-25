@@ -20,6 +20,8 @@ dependencies:
   intl: any
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
+  shopplus_api_client:
+    path: packages/shopplus_api_client
 
 dev_dependencies:
   flutter_test:
