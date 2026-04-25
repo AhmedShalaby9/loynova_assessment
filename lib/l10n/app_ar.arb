@@ -1,0 +1,53 @@
+{
+  "@@locale": "ar",
+  "appTitle": "محفظة شوب بلس",
+  "totalBalance": "الرصيد الكلي",
+  "pendingPoints": "معلق",
+  "expiringPoints": "ينتهي قريباً",
+  "transferButton": "تحويل نقاط",
+  "filterAll": "الكل",
+  "filterEarn": "مكتسبة",
+  "filterRedeem": "مستردة",
+  "filterTransfer": "تحويلات",
+  "transactionEarn": "مكتسب",
+  "transactionRedeem": "مسترد",
+  "transactionTransferIn": "مستلم",
+  "transactionTransferOut": "محول",
+  "transactionPurchase": "مشتريات",
+  "statusCompleted": "مكتمل",
+  "statusPending": "معلق",
+  "statusFailed": "فشل",
+  "retryButton": "إعادة المحاولة",
+  "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+  "emptyTransactions": "لا توجد معاملات",
+  "transferTitle": "تحويل نقاط",
+  "recipientLabel": "المستلم (هاتف أو بريد إلكتروني)",
+  "recipientError": "أدخل رقم مصري صحيح (+20XXXXXXXXXX) أو بريد إلكتروني",
+  "pointsLabel": "عدد النقاط",
+  "pointsErrorMin": "الحد الأدنى للتحويل 100 نقطة",
+  "pointsErrorMax": "الرصيد غير كافٍ",
+  "pointsErrorWhole": "يجب أن تكون النقاط عدداً صحيحاً",
+  "noteLabel": "ملاحظة (اختياري)",
+  "noteError": "لا يمكن أن تتجاوز الملاحظة 150 حرفاً",
+  "confirmTransfer": "تأكيد التحويل",
+  "confirmMessage": "أنت على وشك تحويل {points} نقطة إلى {recipient}",
+  "@confirmMessage": {
+    "placeholders": {
+      "points": { "type": "int" },
+      "recipient": { "type": "String" }
+    }
+  },
+  "transferSuccess": "تم التحويل بنجاح!",
+  "newBalance": "الرصيد الجديد: {balance} نقطة",
+  "@newBalance": {
+    "placeholders": {
+      "balance": { "type": "int" }
+    }
+  },
+  "cancel": "إلغاء",
+  "confirm": "تأكيد",
+  "done": "تم",
+  "insufficientBalance": "رصيدك غير كافٍ",
+  "recipientNotFound": "المستلم غير موجود",
+  "points": "نقطة"
+}

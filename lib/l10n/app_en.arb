@@ -1,0 +1,53 @@
+{
+  "@@locale": "en",
+  "appTitle": "ShopPlus Wallet",
+  "totalBalance": "Total Balance",
+  "pendingPoints": "Pending",
+  "expiringPoints": "Expiring",
+  "transferButton": "Transfer Points",
+  "filterAll": "All",
+  "filterEarn": "Earn",
+  "filterRedeem": "Redeem",
+  "filterTransfer": "Transfer",
+  "transactionEarn": "Earned",
+  "transactionRedeem": "Redeemed",
+  "transactionTransferIn": "Received",
+  "transactionTransferOut": "Sent",
+  "transactionPurchase": "Purchase",
+  "statusCompleted": "Completed",
+  "statusPending": "Pending",
+  "statusFailed": "Failed",
+  "retryButton": "Retry",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "emptyTransactions": "No transactions found",
+  "transferTitle": "Transfer Points",
+  "recipientLabel": "Recipient (Phone or Email)",
+  "recipientError": "Enter a valid Egyptian phone (+20XXXXXXXXXX) or email",
+  "pointsLabel": "Points Amount",
+  "pointsErrorMin": "Minimum transfer is 100 points",
+  "pointsErrorMax": "Insufficient balance",
+  "pointsErrorWhole": "Points must be a whole number",
+  "noteLabel": "Note (optional)",
+  "noteError": "Note cannot exceed 150 characters",
+  "confirmTransfer": "Confirm Transfer",
+  "confirmMessage": "You are about to transfer {points} points to {recipient}",
+  "@confirmMessage": {
+    "placeholders": {
+      "points": { "type": "int" },
+      "recipient": { "type": "String" }
+    }
+  },
+  "transferSuccess": "Transfer Successful!",
+  "newBalance": "New Balance: {balance} pts",
+  "@newBalance": {
+    "placeholders": {
+      "balance": { "type": "int" }
+    }
+  },
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "done": "Done",
+  "insufficientBalance": "You don't have enough points",
+  "recipientNotFound": "Recipient not found",
+  "points": "pts"
+}
