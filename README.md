@@ -191,3 +191,21 @@ final response = await client.get('/wallet/balance');
 ```
 
 The `MockWalletRepository` is still used for this assessment since there's no live API. The `ApiClient` is wired in `core/network/api_client_provider.dart` and ready to back a real repository implementation.
+
+---
+
+## Diagrams
+
+Visual references for the architecture and runtime behavior. Sources live under `docs/`.
+
+### Project Structure
+
+High-level map of the feature-based layout — `core/`, `features/wallet/`, the l10n folder, the router, and the standalone `packages/shopplus_api_client/` package.
+
+![Project Structure](docs/project_structure.svg)
+
+### State Flow
+
+End-to-end BLoC state transitions: initial load → loaded → filter → paginate → transfer → balance refresh, including the error and retry paths.
+
+![State Flow](docs/state_flow_diagram.svg)
