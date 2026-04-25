@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n.dart';
 import '../../data/models/transaction.dart';
 import '../bloc/wallet_bloc.dart';
 import '../bloc/wallet_event.dart';
@@ -8,19 +9,6 @@ import '../bloc/wallet_event.dart';
 enum _FilterOption { all, earn, redeem, transfer }
 
 extension on _FilterOption {
-  String get label {
-    switch (this) {
-      case _FilterOption.all:
-        return 'All';
-      case _FilterOption.earn:
-        return 'Earn';
-      case _FilterOption.redeem:
-        return 'Redeem';
-      case _FilterOption.transfer:
-        return 'Transfer';
-    }
-  }
-
   TransactionType? get type {
     switch (this) {
       case _FilterOption.all:
@@ -31,6 +19,19 @@ extension on _FilterOption {
         return TransactionType.REDEEM;
       case _FilterOption.transfer:
         return TransactionType.TRANSFER_OUT;
+    }
+  }
+
+  String label(AppLocalizations l10n) {
+    switch (this) {
+      case _FilterOption.all:
+        return l10n.filterAll;
+      case _FilterOption.earn:
+        return l10n.filterEarn;
+      case _FilterOption.redeem:
+        return l10n.filterRedeem;
+      case _FilterOption.transfer:
+        return l10n.filterTransfer;
     }
   }
 }
@@ -52,6 +53,7 @@ class FilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final active = _activeOption();
     return SizedBox(
       height: 40,
@@ -61,9 +63,9 @@ class FilterChips extends StatelessWidget {
         children: _FilterOption.values.map((option) {
           final selected = option == active;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsetsDirectional.only(end: 8),
             child: ChoiceChip(
-              label: Text(option.label),
+              label: Text(option.label(l10n)),
               selected: selected,
               onSelected: (_) => context
                   .read<WalletBloc>()

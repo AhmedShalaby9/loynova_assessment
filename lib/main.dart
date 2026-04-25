@@ -4,7 +4,10 @@ import 'core/theme/app_theme.dart';
 import 'features/wallet/data/repository/mock_wallet_repository.dart';
 import 'features/wallet/data/repository/wallet_repository.dart';
 import 'features/wallet/presentation/bloc/wallet_bloc.dart';
+import 'l10n.dart';
 import 'router/app_router.dart';
+
+final ValueNotifier<Locale> appLocale = ValueNotifier(const Locale('en'));
 
 void main() {
   runApp(const ShopPlusWalletApp());
@@ -20,11 +23,17 @@ class ShopPlusWalletApp extends StatelessWidget {
       child: BlocProvider<WalletBloc>(
         create: (ctx) =>
             WalletBloc(repository: ctx.read<WalletRepository>()),
-        child: MaterialApp.router(
-          title: 'ShopPlus Wallet',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          routerConfig: appRouter,
+        child: ValueListenableBuilder<Locale>(
+          valueListenable: appLocale,
+          builder: (context, locale, _) => MaterialApp.router(
+            title: 'ShopPlus Wallet',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            routerConfig: appRouter,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       ),
     );

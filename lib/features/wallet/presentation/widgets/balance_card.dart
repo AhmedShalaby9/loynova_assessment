@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n.dart';
 import '../../data/models/points_balance.dart';
 
 class BalanceCard extends StatelessWidget {
@@ -11,7 +12,10 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat('#,###');
+    final l10n = AppLocalizations.of(context);
+    final fmt = NumberFormat('#,###', Localizations.localeOf(context).toString());
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -33,9 +37,9 @@ class BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Points',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          Text(
+            l10n.totalBalance,
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 8),
           Text(
@@ -51,13 +55,15 @@ class BalanceCard extends StatelessWidget {
           Row(
             children: [
               _InfoChip(
-                label: 'Pending',
+                label: l10n.pendingPoints,
                 value: fmt.format(balance.pendingPoints),
+                unit: l10n.points,
               ),
               const SizedBox(width: 12),
               _InfoChip(
-                label: 'Expiring',
+                label: l10n.expiringPoints,
                 value: fmt.format(balance.expiringPoints),
+                unit: l10n.points,
               ),
             ],
           ),
@@ -69,8 +75,11 @@ class BalanceCard extends StatelessWidget {
                 'transfer',
                 extra: balance.totalPoints,
               ),
-              icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Transfer'),
+              icon: Transform.flip(
+                flipX: isRtl,
+                child: const Icon(Icons.send_rounded, size: 18),
+              ),
+              label: Text(l10n.transferButton),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.primary,
@@ -94,7 +103,12 @@ class BalanceCard extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final String label;
   final String value;
-  const _InfoChip({required this.label, required this.value});
+  final String unit;
+  const _InfoChip({
+    required this.label,
+    required this.value,
+    required this.unit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +128,7 @@ class _InfoChip extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '$value pts',
+              '$value $unit',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 15,

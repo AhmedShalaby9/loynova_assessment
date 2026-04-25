@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n.dart';
+import '../../../../main.dart' show appLocale;
 import '../bloc/wallet_bloc.dart';
 import '../bloc/wallet_event.dart';
 import '../bloc/wallet_state.dart';
@@ -45,20 +47,55 @@ class _WalletScreenState extends State<WalletScreen> {
     context.read<WalletBloc>().add(const RefreshWallet());
   }
 
+  void _toggleLocale() {
+    appLocale.value = appLocale.value.languageCode == 'en'
+        ? const Locale('ar')
+        : const Locale('en');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        title: const Text(
-          'My Wallet',
-          style: TextStyle(
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          ValueListenableBuilder<Locale>(
+            valueListenable: appLocale,
+            builder: (context, locale, _) {
+              final showLabel = locale.languageCode == 'en' ? 'AR' : 'EN';
+              return Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: TextButton(
+                  onPressed: _toggleLocale,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    backgroundColor:
+                        AppColors.primary.withValues(alpha: 0.08),
+                    minimumSize: const Size(44, 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  child: Text(showLabel),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -69,7 +106,9 @@ class _WalletScreenState extends State<WalletScreen> {
                 return const _LoadingSkeleton();
               }
               if (state is WalletError) {
-                return _ErrorView(message: state.message);
+                return _ErrorView(
+                  message: _localizedError(l10n, state.code, state.message),
+                );
               }
               if (state is WalletLoaded) {
                 return RefreshIndicator(
@@ -88,6 +127,17 @@ class _WalletScreenState extends State<WalletScreen> {
       ),
     );
   }
+
+  String _localizedError(AppLocalizations l10n, String code, String fallback) {
+    switch (code) {
+      case 'INSUFFICIENT_BALANCE':
+        return l10n.insufficientBalance;
+      case 'RECIPIENT_NOT_FOUND':
+        return l10n.recipientNotFound;
+      default:
+        return l10n.errorGeneric;
+    }
+  }
 }
 
 class _LoadedView extends StatelessWidget {
@@ -100,7 +150,7 @@ class _LoadedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final count = state.filteredTransactions.length;
     final extraCount = (state.isLoadingMore || state.hasMore) ? 1 : 0;
-    final totalItemCount = 3 + (count == 0 ? 1 : count) + extraCount;
+    final totalItemCount = 2 + (count == 0 ? 1 : count) + extraCount;
 
     return ListView.builder(
       controller: scrollController,
@@ -109,27 +159,14 @@ class _LoadedView extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index == 0) return BalanceCard(balance: state.balance);
         if (index == 1) {
-          return const Padding(
-            padding: EdgeInsets.only(top: 24, left: 4, bottom: 8),
-            child: Text(
-              'Transactions',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          );
-        }
-        if (index == 2) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsetsDirectional.only(top: 24, bottom: 12),
             child: FilterChips(activeFilter: state.selectedFilter),
           );
         }
-        if (count == 0 && index == 3) return const _EmptyState();
+        if (count == 0 && index == 2) return const _EmptyState();
 
-        final txIndex = index - 3;
+        final txIndex = index - 2;
         if (txIndex < count) {
           final tx = state.filteredTransactions[txIndex];
           return _TransactionContainer(
@@ -236,6 +273,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -246,7 +284,10 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -262,7 +303,7 @@ class _ErrorView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text('Retry'),
+              child: Text(l10n.retryButton),
             ),
           ],
         ),
@@ -276,15 +317,23 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
-        children: const [
-          Icon(Icons.inbox_outlined, size: 48, color: AppColors.textSecondary),
-          SizedBox(height: 12),
+        children: [
+          const Icon(
+            Icons.inbox_outlined,
+            size: 48,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 12),
           Text(
-            'No transactions match this filter',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            l10n.emptyTransactions,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n.dart';
 import '../../data/models/transfer_request.dart';
 import '../bloc/wallet_bloc.dart';
 import '../bloc/wallet_event.dart';
@@ -24,8 +25,8 @@ class _TransferScreenState extends State<TransferScreen> {
   final _pointsController = TextEditingController();
   final _noteController = TextEditingController();
 
-  String? _recipientError;
-  String? _pointsError;
+  String? _recipientErrorKey;
+  String? _pointsErrorKey;
   bool _isFormValid = false;
   bool _submitting = false;
 
@@ -50,18 +51,18 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   String? _validateRecipient(String value) {
-    if (value.isEmpty) return 'Recipient is required';
+    if (value.isEmpty) return 'recipient_required';
     if (_phoneRegex.hasMatch(value)) return null;
     if (_emailRegex.hasMatch(value)) return null;
-    return 'Enter a valid Egyptian phone (+20XXXXXXXXXX) or email';
+    return 'recipient_invalid';
   }
 
   String? _validatePoints(String value) {
-    if (value.isEmpty) return 'Points amount is required';
+    if (value.isEmpty) return 'points_required';
     final n = int.tryParse(value);
-    if (n == null) return 'Enter a whole number';
-    if (n < 100) return 'Minimum transfer is 100 points';
-    if (n > widget.currentBalance) return 'Exceeds available balance';
+    if (n == null) return 'points_whole';
+    if (n < 100) return 'points_min';
+    if (n > widget.currentBalance) return 'points_max';
     return null;
   }
 
@@ -69,10 +70,37 @@ class _TransferScreenState extends State<TransferScreen> {
     final rErr = _validateRecipient(_recipientController.text);
     final pErr = _validatePoints(_pointsController.text);
     setState(() {
-      _recipientError = rErr;
-      _pointsError = pErr;
+      _recipientErrorKey = rErr;
+      _pointsErrorKey = pErr;
       _isFormValid = rErr == null && pErr == null;
     });
+  }
+
+  String? _resolveRecipientError(AppLocalizations l10n) {
+    switch (_recipientErrorKey) {
+      case 'recipient_required':
+      case 'recipient_invalid':
+        return l10n.recipientError;
+      case 'recipient_not_found':
+        return l10n.recipientNotFound;
+      default:
+        return null;
+    }
+  }
+
+  String? _resolvePointsError(AppLocalizations l10n) {
+    switch (_pointsErrorKey) {
+      case 'points_required':
+      case 'points_whole':
+        return l10n.pointsErrorWhole;
+      case 'points_min':
+        return l10n.pointsErrorMin;
+      case 'points_max':
+      case 'insufficient_balance':
+        return l10n.pointsErrorMax;
+      default:
+        return null;
+    }
   }
 
   Future<void> _submit() async {
@@ -89,7 +117,8 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Future<bool?> _showConfirmationSheet(TransferRequest request) {
-    final fmt = NumberFormat('#,###');
+    final l10n = AppLocalizations.of(context);
+    final fmt = NumberFormat('#,###', Localizations.localeOf(context).toString());
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -119,30 +148,34 @@ class _TransferScreenState extends State<TransferScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Confirm Transfer',
-              style: TextStyle(
+            Text(
+              l10n.confirmTransfer,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Please review the details before proceeding.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            const SizedBox(height: 8),
+            Text(
+              l10n.confirmMessage(request.points, request.recipient),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 20),
-            _ConfirmRow(label: 'Recipient', value: request.recipient),
+            _ConfirmRow(label: l10n.recipientLabel, value: request.recipient),
             const SizedBox(height: 12),
             _ConfirmRow(
-              label: 'Amount',
-              value: '${fmt.format(request.points)} pts',
+              label: l10n.pointsLabel,
+              value: '${fmt.format(request.points)} ${l10n.points}',
               highlight: true,
             ),
             if (request.note != null) ...[
               const SizedBox(height: 12),
-              _ConfirmRow(label: 'Note', value: request.note!),
+              _ConfirmRow(label: l10n.noteLabel, value: request.note!),
             ],
             const SizedBox(height: 24),
             Row(
@@ -158,7 +191,7 @@ class _TransferScreenState extends State<TransferScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -177,7 +210,7 @@ class _TransferScreenState extends State<TransferScreen> {
                         fontSize: 14,
                       ),
                     ),
-                    child: const Text('Confirm'),
+                    child: Text(l10n.confirm),
                   ),
                 ),
               ],
@@ -189,17 +222,17 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Future<void> _showSuccessDialog(String transactionId, int newBalance) async {
-    final fmt = NumberFormat('#,###');
+    final l10n = AppLocalizations.of(context);
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
-          children: const [
-            Icon(Icons.check_circle, color: AppColors.success, size: 28),
-            SizedBox(width: 10),
-            Text('Transfer Successful'),
+          children: [
+            const Icon(Icons.check_circle, color: AppColors.success, size: 28),
+            const SizedBox(width: 10),
+            Expanded(child: Text(l10n.transferSuccess)),
           ],
         ),
         content: Column(
@@ -207,12 +240,15 @@ class _TransferScreenState extends State<TransferScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            _ConfirmRow(label: 'Transaction ID', value: transactionId),
+            _ConfirmRow(label: 'ID', value: transactionId),
             const SizedBox(height: 10),
-            _ConfirmRow(
-              label: 'New Balance',
-              value: '${fmt.format(newBalance)} pts',
-              highlight: true,
+            Text(
+              l10n.newBalance(newBalance),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
             ),
           ],
         ),
@@ -220,7 +256,7 @@ class _TransferScreenState extends State<TransferScreen> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            child: const Text('Done'),
+            child: Text(l10n.done),
           ),
         ],
       ),
@@ -229,7 +265,11 @@ class _TransferScreenState extends State<TransferScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final balanceFmt = NumberFormat('#,###').format(widget.currentBalance);
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
+    final balanceFmt =
+        NumberFormat('#,###', locale.toString()).format(widget.currentBalance);
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -237,13 +277,16 @@ class _TransferScreenState extends State<TransferScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Transform.flip(
+            flipX: isRtl,
+            child: const Icon(Icons.arrow_back_ios_new, size: 20),
+          ),
           color: AppColors.textPrimary,
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Transfer Points',
-          style: TextStyle(
+        title: Text(
+          l10n.transferTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
@@ -258,13 +301,13 @@ class _TransferScreenState extends State<TransferScreen> {
           }
           if (state is TransferError) {
             if (state.code == 'INSUFFICIENT_BALANCE') {
-              setState(() => _pointsError = state.message);
+              setState(() => _pointsErrorKey = 'insufficient_balance');
             } else if (state.code == 'RECIPIENT_NOT_FOUND') {
-              setState(() => _recipientError = state.message);
+              setState(() => _recipientErrorKey = 'recipient_not_found');
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(l10n.errorGeneric),
                   backgroundColor: AppColors.error,
                 ),
               );
@@ -289,9 +332,9 @@ class _TransferScreenState extends State<TransferScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _BalanceBanner(balance: balanceFmt),
+                    _BalanceBanner(balance: balanceFmt, unit: l10n.points),
                     const SizedBox(height: 24),
-                    _FieldLabel('Recipient (Phone or Email)'),
+                    _FieldLabel(l10n.recipientLabel),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _recipientController,
@@ -300,43 +343,40 @@ class _TransferScreenState extends State<TransferScreen> {
                       autocorrect: false,
                       autofillHints: null,
                       decoration: _decoration(
-                        hint: '+20XXXXXXXXXX or email@example.com',
-                        error: _recipientError,
+                        hint: '+20XXXXXXXXXX',
+                        error: _resolveRecipientError(l10n),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _FieldLabel('Points Amount'),
+                    _FieldLabel(l10n.pointsLabel),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _pointsController,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: _decoration(
-                        hint: 'Enter amount (min 100)',
-                        error: _pointsError,
-                        suffix: 'pts',
+                        hint: '100+',
+                        error: _resolvePointsError(l10n),
+                        suffix: l10n.points,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Available: $balanceFmt pts',
+                      '$balanceFmt ${l10n.points}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _FieldLabel('Note (optional)'),
+                    _FieldLabel(l10n.noteLabel),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _noteController,
                       maxLength: 150,
                       maxLines: 3,
-                      decoration: _decoration(
-                        hint: 'Add a note for the recipient',
-                      ).copyWith(
-                        counterText:
-                            '${_noteController.text.length}/150',
+                      decoration: _decoration(hint: '').copyWith(
+                        counterText: '${_noteController.text.length}/150',
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -369,7 +409,7 @@ class _TransferScreenState extends State<TransferScreen> {
                                   strokeWidth: 2.5,
                                 ),
                               )
-                            : const Text('Transfer Points'),
+                            : Text(l10n.transferButton),
                       ),
                     ),
                   ],
@@ -480,10 +520,12 @@ class _ConfirmRow extends StatelessWidget {
 
 class _BalanceBanner extends StatelessWidget {
   final String balance;
-  const _BalanceBanner({required this.balance});
+  final String unit;
+  const _BalanceBanner({required this.balance, required this.unit});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -503,15 +545,15 @@ class _BalanceBanner extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Available Balance',
-                style: TextStyle(
+              Text(
+                l10n.totalBalance,
+                style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
               Text(
-                '$balance pts',
+                '$balance $unit',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,

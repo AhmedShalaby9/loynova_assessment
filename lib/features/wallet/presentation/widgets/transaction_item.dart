@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n.dart';
 import '../../data/models/transaction.dart';
 
 class TransactionItem extends StatelessWidget {
@@ -29,11 +30,49 @@ class TransactionItem extends StatelessWidget {
     }
   }
 
+  bool get _isDirectionalIcon =>
+      transaction.type == TransactionType.TRANSFER_IN ||
+      transaction.type == TransactionType.TRANSFER_OUT;
+
+  String _statusLabel(AppLocalizations l10n) {
+    switch (transaction.status) {
+      case TransactionStatus.COMPLETED:
+        return l10n.statusCompleted;
+      case TransactionStatus.PENDING:
+        return l10n.statusPending;
+      case TransactionStatus.FAILED:
+        return l10n.statusFailed;
+    }
+  }
+
+  String _typeLabel(AppLocalizations l10n) {
+    switch (transaction.type) {
+      case TransactionType.EARN:
+        return l10n.transactionEarn;
+      case TransactionType.REDEEM:
+        return l10n.transactionRedeem;
+      case TransactionType.TRANSFER_IN:
+        return l10n.transactionTransferIn;
+      case TransactionType.TRANSFER_OUT:
+        return l10n.transactionTransferOut;
+      case TransactionType.PURCHASE:
+        return l10n.transactionPurchase;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
     final pointsColor = _isPositive ? AppColors.success : AppColors.error;
     final sign = _isPositive ? '+' : '-';
-    final fmt = NumberFormat('#,###');
+    final fmt = NumberFormat('#,###', locale.toString());
+    final dateFmt = DateFormat('MMM dd, yyyy', locale.toString());
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+    final descriptionText = transaction.description.isEmpty
+        ? _typeLabel(l10n)
+        : transaction.description;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -42,14 +81,18 @@ class TransactionItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _Logo(logoUrl: transaction.merchantLogo, icon: _typeIcon),
+          _Logo(
+            logoUrl: transaction.merchantLogo,
+            icon: _typeIcon,
+            flipIcon: _isDirectionalIcon && isRtl,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transaction.description,
+                  descriptionText,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -60,7 +103,7 @@ class TransactionItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  DateFormat('MMM dd, yyyy').format(transaction.createdAt),
+                  dateFmt.format(transaction.createdAt),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -74,7 +117,7 @@ class TransactionItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$sign${fmt.format(transaction.points)} pts',
+                '$sign${fmt.format(transaction.points)} ${l10n.points}',
                 style: TextStyle(
                   color: pointsColor,
                   fontWeight: FontWeight.w700,
@@ -82,7 +125,10 @@ class TransactionItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              _StatusBadge(status: transaction.status),
+              _StatusBadge(
+                status: transaction.status,
+                label: _statusLabel(l10n),
+              ),
             ],
           ),
         ],
@@ -94,7 +140,20 @@ class TransactionItem extends StatelessWidget {
 class _Logo extends StatelessWidget {
   final String? logoUrl;
   final IconData icon;
-  const _Logo({required this.logoUrl, required this.icon});
+  final bool flipIcon;
+
+  const _Logo({
+    required this.logoUrl,
+    required this.icon,
+    this.flipIcon = false,
+  });
+
+  Widget _iconWidget() {
+    final iconWidget = Icon(icon, color: AppColors.primary, size: 22);
+    return flipIcon
+        ? Transform.flip(flipX: true, child: iconWidget)
+        : iconWidget;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +165,7 @@ class _Logo extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: AppColors.primary, size: 22),
+        child: _iconWidget(),
       );
     }
     return ClipOval(
@@ -127,7 +186,7 @@ class _Logo extends StatelessWidget {
             color: AppColors.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: AppColors.primary, size: 22),
+          child: _iconWidget(),
         ),
       ),
     );
@@ -136,28 +195,25 @@ class _Logo extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final TransactionStatus status;
-  const _StatusBadge({required this.status});
+  final String label;
+  const _StatusBadge({required this.status, required this.label});
 
   @override
   Widget build(BuildContext context) {
     late final Color bg;
     late final Color fg;
-    late final String label;
     switch (status) {
       case TransactionStatus.COMPLETED:
         bg = AppColors.success.withValues(alpha: 0.12);
         fg = AppColors.success;
-        label = 'Completed';
         break;
       case TransactionStatus.PENDING:
         bg = const Color(0xFFF59E0B).withValues(alpha: 0.15);
         fg = const Color(0xFFB45309);
-        label = 'Pending';
         break;
       case TransactionStatus.FAILED:
         bg = AppColors.error.withValues(alpha: 0.12);
         fg = AppColors.error;
-        label = 'Failed';
         break;
     }
 
